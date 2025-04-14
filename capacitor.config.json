@@ -1,0 +1,6 @@
+{
+  "appId": "com.ngp.hungrywheels",
+  "appName": "HungryWheels",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

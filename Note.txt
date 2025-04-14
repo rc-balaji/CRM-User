@@ -1,0 +1,61 @@
+npm i -D @capacitor/cli
+ npm i @capacitor/core  
+npx cap init
+npm i @capacitor/android 
+npx cap add android
+npx cap sync             
+npx cap run android    
+npx cap open  android                                                                                                          
+
+
+cd android
+
+
+./gradlew assembleRelease     
+
+
+keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias
+
+
+
+>------------------------------------------------------------------
+Enter the distinguished name. Provide a single dot (.) to leave a sub-component empty or press ENTER to use the default value in braces.
+What is your first and last name?
+  [Unknown]:  crm
+What is the name of your organizational unit?
+  [Unknown]:
+What is the name of your organization?
+  [Unknown]:
+What is the name of your City or Locality?
+  [Unknown]:
+What is the name of your State or Province?
+  [Unknown]:
+What is the two-letter country code for this unit?
+  [Unknown]:
+Is CN=crm, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
+  [no]:
+Enter the distinguished name. Provide a single dot (.) to leave a sub-component empty or press ENTER to use the default value in braces.
+What is your first and last name?
+  [crm]:
+What is the name of your organizational unit?
+  [Unknown]:
+What is the name of your organization?
+  [Unknown]:
+What is the name of your City or Locality?
+  [Unknown]:
+What is the name of your State or Province?
+  [Unknown]:
+What is the two-letter country code for this unit?
+  [Unknown]:
+Is CN=crm, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
+  [no]:  yes
+
+Generating 2,048 bit RSA key pair and self-signed certificate (SHA384withRSA) with a validity of 10,000 days
+        for: CN=crm, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown
+[Storing my-release-key.jks]
+PS D:\CMS\crm\android\app\build\outputs\apk\release> 
+
+
+>------------------------------------------------------------------
+
+apksigner sign --ks my-release-key.jks --out HungryWheels.apk app-release-unsigned.apk
