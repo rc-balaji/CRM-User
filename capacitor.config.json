@@ -1,6 +1,6 @@
 {
-  "appId": "com.ngp.hungrywheels",
-  "appName": "HungryWheels",
+  "appId": "com.ngp.mealstream",
+  "appName": "MealStream",
   "webDir": "dist",
   "bundledWebRuntime": false
 }

@@ -1,9 +1,16 @@
+1 . npm run build
+
 npm i -D @capacitor/cli
- npm i @capacitor/core  
-npx cap init
+npm i @capacitor/core  
 npm i @capacitor/android 
+
+npx cap init
 npx cap add android
-npx cap sync             
+
+
+npx cap sync 
+
+
 npx cap run android    
 npx cap open  android                                                                                                          
 
@@ -13,6 +20,8 @@ cd android
 
 ./gradlew assembleRelease     
 
+
+cd .\app\build\outputs\apk\release
 
 keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias
 
@@ -58,4 +67,4 @@ PS D:\CMS\crm\android\app\build\outputs\apk\release>
 
 >------------------------------------------------------------------
 
-apksigner sign --ks my-release-key.jks --out HungryWheels.apk app-release-unsigned.apk
+apksigner sign --ks my-release-key.jks --out MealStream.apk app-release-unsigned.apk

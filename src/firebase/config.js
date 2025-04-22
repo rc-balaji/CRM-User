@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC3AjgHywwV--TpcIVOBhBSXk0_DDMf8d4",
-  authDomain: "crm-project-f7c2c.firebaseapp.com",
-  projectId: "crm-project-f7c2c",
-  storageBucket: "crm-project-f7c2c.firebasestorage.app",
-  messagingSenderId: "686470505901",
-  appId: "1:686470505901:web:e48e4b3788ebc0c2d0ad24",
+  apiKey: "AIzaSyDklaku_vCOpDBm6wicnCMD7K3Udrjt6Bo",
+  authDomain: "canteen-118b3.firebaseapp.com",
+  projectId: "canteen-118b3",
+  storageBucket: "canteen-118b3.firebasestorage.app",
+  messagingSenderId: "966778135747",
+  appId: "1:966778135747:web:2b2b3e425929f082d0ee76",
 };
 
 // Initialize Firebase

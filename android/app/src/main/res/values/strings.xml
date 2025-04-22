@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MealStream</string>
+    <string name="title_activity_main">MealStream</string>
+    <string name="package_name">com.ngp.mealstream</string>
+    <string name="custom_url_scheme">com.ngp.mealstream</string>
+</resources>
