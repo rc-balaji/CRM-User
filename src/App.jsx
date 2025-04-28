@@ -5,6 +5,8 @@ import HomePage from "./pages/HomePage.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import BillPage from "./pages/BillPage.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+
+import OrdersPage from "./pages/OrdersPage.jsx";
 import "./App.css";
 
 const SplashScreen = () => {
@@ -64,7 +66,7 @@ const SplashScreen = () => {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -77,13 +79,14 @@ function App() {
   return (
     <CartProvider>
       <Router>
-        <AnimatePresence>{showSplash && <SplashScreen />}</AnimatePresence>
+        {/* <AnimatePresence>{showSplash && <SplashScreen />}</AnimatePresence> */}
 
         {!showSplash && (
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/bill" element={<BillPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
           </Routes>
         )}
       </Router>

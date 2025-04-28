@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useState, useEffect } from "react";
-import { ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
+import { ShoppingCart, ChevronDown, ChevronUp, History } from "lucide-react";
 import { db } from "../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
+import Swal from "sweetalert2";
 
 const HomePage = () => {
   const { cart, addToCart } = useCart();
@@ -11,6 +12,7 @@ const HomePage = () => {
   const [openCategory, setOpenCategory] = useState({});
   const [categories, setCategories] = useState({});
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Fetch available items from Firebase
   useEffect(() => {
@@ -48,6 +50,24 @@ const HomePage = () => {
     fetchAvailableItems();
   }, []);
 
+  const handleViewOrders = async () => {
+    const { value: rollNumber } = await Swal.fire({
+      title: "Enter Your Roll Number",
+      input: "text",
+      inputPlaceholder: "e.g. 21BCE1234",
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value) {
+          return "You need to enter your roll number!";
+        }
+      },
+    });
+
+    if (rollNumber) {
+      navigate(`/orders?rollNumber=${rollNumber}`);
+    }
+  };
+
   // Update category visibility based on search
   useEffect(() => {
     if (Object.keys(categories).length > 0) {
@@ -82,6 +102,13 @@ const HomePage = () => {
       <div className="flex justify-between items-center fixed bg-white w-full p-4 shadow-md z-10">
         <h1 className="text-2xl font-bold">🍽️ Menu</h1>
         <div className="flex items-center space-x-4">
+          <button
+            onClick={handleViewOrders}
+            className="p-2 rounded-full hover:bg-gray-100"
+            title="View Orders"
+          >
+            <History className="w-6 h-6 text-gray-700" />
+          </button>
           <Link to="/cart" className="relative">
             <ShoppingCart className="w-8 h-8 text-gray-700" />
             {cart.length > 0 && (

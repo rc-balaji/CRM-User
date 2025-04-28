@@ -2,16 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { App } from "@capacitor/app";
-import { QRCodeCanvas } from "qrcode.react"; // Ensure correct import
+import { QRCodeCanvas } from "qrcode.react";
 import Swal from "sweetalert2";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase/config";
 
 const BillPage = () => {
-  const { cart } = useCart();
+  const { cart, clearCart } = useCart();
   const navigate = useNavigate();
   const [billId, setBillId] = useState("");
   const [orderId, setOrderId] = useState("");
   const [showQR, setShowQR] = useState(false);
   const [upiUrl, setUpiUrl] = useState("");
+  const [isStaff, setIsStaff] = useState(false);
+  const [rollNumber, setRollNumber] = useState("");
 
   useEffect(() => {
     setBillId(Math.random().toString(36).substring(7).toUpperCase());
@@ -44,29 +48,107 @@ const BillPage = () => {
     return `${timestamp}${randomId}`;
   };
 
-  const handlePayment = () => {
-    Swal.fire({
+  const saveOrderToFirestore = async (paymentMethod) => {
+    try {
+      // Ask for roll number before saving
+      const { value: enteredRollNumber } = await Swal.fire({
+        title: "Enter Your Roll Number",
+        input: "text",
+        inputPlaceholder: "e.g. 21BCE1234",
+        showCancelButton: true,
+        inputValidator: (value) => {
+          if (!value) {
+            return "You need to enter your roll number!";
+          }
+        },
+      });
+
+      if (!enteredRollNumber) return false; // User cancelled
+
+      setRollNumber(enteredRollNumber);
+
+      const orderData = {
+        orderId,
+        billId,
+        items: cart.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          uniqueId: item.uniqueId,
+        })),
+        total: total.toFixed(2),
+        date: serverTimestamp(),
+        humanReadableDate: date,
+        time,
+        status: paymentMethod === "Cash on Delivery" ? "pending" : "paid",
+        paymentMethod,
+        isStaff,
+        isCompleted: false,
+        transactionId:
+          paymentMethod !== "Cash on Delivery" ? generateTransactionId() : null,
+        rollNumber: enteredRollNumber,
+        queuePosition: Date.now(), // Using timestamp for queue ordering
+      };
+
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+      console.log("Order saved with ID: ", docRef.id);
+
+      // Clear cart after successful order
+      clearCart();
+
+      return true;
+    } catch (error) {
+      console.error("Error saving order: ", error);
+      return false;
+    }
+  };
+
+  const handlePayment = async () => {
+    const result = await Swal.fire({
       title: "Choose Payment Method",
       showCancelButton: true,
       showDenyButton: true,
       confirmButtonText: "QR Code",
       denyButtonText: "UPI App",
       cancelButtonText: "Cash on Delivery",
-    }).then((result) => {
-      const transactionId = generateTransactionId();
-      const upiLink = `upi://pay?pa=pinelabs.10032184@hdfcbank&tr=${transactionId}&am=${total.toFixed(
-        2
-      )}&cu=INR`;
-      setUpiUrl(upiLink);
-
-      if (result.isConfirmed) {
-        setShowQR(true);
-      } else if (result.isDenied) {
-        window.location.href = upiLink;
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        Swal.fire("Order Placed!", "Thank you for your purchase!", "success");
-      }
     });
+
+    const transactionId = generateTransactionId();
+    const upiLink = `upi://pay?pa=pinelabs.10032184@hdfcbank&tr=${transactionId}&am=${total.toFixed(
+      2
+    )}&cu=INR`;
+    setUpiUrl(upiLink);
+
+    let paymentMethod = "";
+    if (result.isConfirmed) {
+      paymentMethod = "QR Code";
+      setShowQR(true);
+    } else if (result.isDenied) {
+      paymentMethod = "UPI App";
+      window.location.href = upiLink;
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      paymentMethod = "Cash on Delivery";
+    }
+
+    // Save order to Firestore
+    const isSaved = await saveOrderToFirestore(paymentMethod);
+
+    if (isSaved) {
+      Swal.fire(
+        "Order Placed!",
+        `Thank you for your purchase! Payment method: ${paymentMethod}`,
+        "success"
+      ).then(() => {
+        navigate("/"); // Redirect to home after successful order
+      });
+    } else {
+      Swal.fire(
+        "Error",
+        "There was an error saving your order. Please try again.",
+        "error"
+      );
+    }
   };
 
   const handleCancel = () => {
@@ -79,7 +161,7 @@ const BillPage = () => {
       cancelButtonText: "No, Go Back",
     }).then((result) => {
       if (result.isConfirmed) {
-        navigate("/"); // Redirect to the home page
+        navigate("/");
       }
     });
   };
@@ -87,7 +169,7 @@ const BillPage = () => {
   return (
     <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-5 relative">
       <button
-        onClick={() => navigate("/")} // This will navigate to the home page
+        onClick={() => navigate("/")}
         className="absolute top-4 right-4 bg-gray-200 p-2 rounded-md shadow-md hover:bg-gray-300"
       >
         🏠 Home
