@@ -21,7 +21,7 @@ const OrdersPage = () => {
       Swal.fire(
         "Error",
         "Roll number is required to view orders",
-        "error"
+        "error",
       ).then(() => {
         navigate("/");
       });
@@ -32,7 +32,7 @@ const OrdersPage = () => {
       try {
         const q = query(
           collection(db, "orders"),
-          where("rollNumber", "==", rollNumber)
+          where("rollNumber", "==", rollNumber),
         );
 
         const querySnapshot = await getDocs(q);
@@ -129,7 +129,7 @@ const OrdersPage = () => {
                 <div className="flex items-center space-x-4">
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                      order.status
+                      order.status,
                     )}`}
                   >
                     {order.status}
@@ -179,7 +179,7 @@ const OrdersPage = () => {
                   <p className="text-gray-600">Status</p>
                   <p
                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                      selectedOrder.status
+                      selectedOrder.status,
                     )}`}
                   >
                     {selectedOrder.status}

@@ -10,31 +10,38 @@ import { db } from "../firebase/config";
 const BillPage = () => {
   const { cart, clearCart } = useCart();
   const navigate = useNavigate();
+
+  // IDs
   const [billId, setBillId] = useState("");
   const [orderId, setOrderId] = useState("");
+
+  // UI state
   const [showQR, setShowQR] = useState(false);
   const [upiUrl, setUpiUrl] = useState("");
-  const [isStaff, setIsStaff] = useState(false);
-  const [rollNumber, setRollNumber] = useState("");
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  const [finalCart, setFinalCart] = useState([]);
+  const [finalTotal, setFinalTotal] = useState(0);
 
   useEffect(() => {
     setBillId(Math.random().toString(36).substring(7).toUpperCase());
     setOrderId(Math.random().toString(36).substring(7).toUpperCase());
 
-    App.addListener("backButton", ({ canGoBack }) => {
-      if (canGoBack) {
-        navigate("/");
-      } else {
-        App.exitApp();
-      }
+    App.addListener("backButton", () => {
+      navigate("/");
     });
 
-    return () => {
-      App.removeAllListeners();
-    };
+    return () => App.removeAllListeners();
   }, []);
 
-  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const liveTotal = cart.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0,
+  );
+
+  const displayCart = orderPlaced ? finalCart : cart;
+  const displayTotal = orderPlaced ? finalTotal : liveTotal;
+
   const date = new Date().toLocaleDateString();
   const time = new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -42,68 +49,52 @@ const BillPage = () => {
     hour12: true,
   });
 
-  const generateTransactionId = () => {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `${timestamp}${randomId}`;
-  };
+  const generateTransactionId = () =>
+    Date.now().toString(36).toUpperCase() +
+    Math.random().toString(36).substring(2, 8).toUpperCase();
 
+  // ================= SAVE ORDER =================
   const saveOrderToFirestore = async (paymentMethod) => {
-    try {
-      // Ask for roll number before saving
-      const { value: enteredRollNumber } = await Swal.fire({
-        title: "Enter Your Roll Number",
-        input: "text",
-        inputPlaceholder: "e.g. 21BCE1234",
-        showCancelButton: true,
-        inputValidator: (value) => {
-          if (!value) {
-            return "You need to enter your roll number!";
-          }
-        },
-      });
+    const { value: rollNumber } = await Swal.fire({
+      title: "Enter Your Roll Number",
+      input: "text",
+      inputPlaceholder: "e.g. 21BCE1234",
+      showCancelButton: true,
+      inputValidator: (v) => (!v ? "Roll number required!" : null),
+    });
 
-      if (!enteredRollNumber) return false; // User cancelled
+    if (!rollNumber) return false;
 
-      setRollNumber(enteredRollNumber);
+    // SNAPSHOT BEFORE CLEAR
+    setFinalCart([...cart]);
+    setFinalTotal(liveTotal);
 
-      const orderData = {
-        orderId,
-        billId,
-        items: cart.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          uniqueId: item.uniqueId,
-        })),
-        total: total.toFixed(2),
-        date: serverTimestamp(),
-        humanReadableDate: date,
-        time,
-        status: paymentMethod === "Cash on Delivery" ? "pending" : "paid",
-        paymentMethod,
-        isStaff,
-        isCompleted: false,
-        transactionId:
-          paymentMethod !== "Cash on Delivery" ? generateTransactionId() : null,
-        rollNumber: enteredRollNumber,
-        queuePosition: Date.now(), // Using timestamp for queue ordering
-      };
+    const orderData = {
+      orderId,
+      billId,
+      items: cart,
+      total: liveTotal.toFixed(2),
+      date: serverTimestamp(),
+      humanReadableDate: date,
+      time,
+      paymentMethod,
+      status: paymentMethod === "Cash on Delivery" ? "pending" : "paid",
+      rollNumber,
+      transactionId:
+        paymentMethod !== "Cash on Delivery" ? generateTransactionId() : null,
+      isCompleted: false,
+      queuePosition: Date.now(),
+    };
 
-      const docRef = await addDoc(collection(db, "orders"), orderData);
-      console.log("Order saved with ID: ", docRef.id);
+    await addDoc(collection(db, "orders"), orderData);
 
-      // Clear cart after successful order
-      clearCart();
+    clearCart();
+    setOrderPlaced(true);
 
-      return true;
-    } catch (error) {
-      console.error("Error saving order: ", error);
-      return false;
-    }
+    return true;
   };
 
+  // ================= PAYMENT =================
   const handlePayment = async () => {
     const result = await Swal.fire({
       title: "Choose Payment Method",
@@ -114,139 +105,96 @@ const BillPage = () => {
       cancelButtonText: "Cash on Delivery",
     });
 
-    const transactionId = generateTransactionId();
-    const upiLink = `upi://pay?pa=pinelabs.10032184@hdfcbank&tr=${transactionId}&am=${total.toFixed(
-      2
+    const upiLink = `upi://pay?pa=pinelabs.10032184@hdfcbank&am=${liveTotal.toFixed(
+      2,
     )}&cu=INR`;
+
     setUpiUrl(upiLink);
 
-    let paymentMethod = "";
+    let method = "Cash on Delivery";
+
     if (result.isConfirmed) {
-      paymentMethod = "QR Code";
+      method = "QR Code";
       setShowQR(true);
     } else if (result.isDenied) {
-      paymentMethod = "UPI App";
+      method = "UPI App";
       window.location.href = upiLink;
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      paymentMethod = "Cash on Delivery";
     }
 
-    // Save order to Firestore
-    const isSaved = await saveOrderToFirestore(paymentMethod);
+    const saved = await saveOrderToFirestore(method);
 
-    if (isSaved) {
-      Swal.fire(
-        "Order Placed!",
-        `Thank you for your purchase! Payment method: ${paymentMethod}`,
-        "success"
-      ).then(() => {
-        navigate("/"); // Redirect to home after successful order
-      });
-    } else {
-      Swal.fire(
-        "Error",
-        "There was an error saving your order. Please try again.",
-        "error"
-      );
+    if (saved) {
+      Swal.fire("Order Placed!", "Please save your bill.", "success");
     }
   };
 
-  const handleCancel = () => {
-    Swal.fire({
-      title: "Are you sure you want to cancel the order?",
-      text: "This action will cancel the entire order and you will be redirected to the home page.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Cancel",
-      cancelButtonText: "No, Go Back",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        navigate("/");
-      }
-    });
-  };
-
+  // ================= UI =================
   return (
-    <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-5 relative">
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-4 right-4 bg-gray-200 p-2 rounded-md shadow-md hover:bg-gray-300"
-      >
-        🏠 Home
-      </button>
+    <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-5">
       <h1 className="text-2xl font-bold text-center border-b pb-2">
         🍽️ CRM Foods
       </h1>
-      <div className="mt-3">
-        <p>
-          🧾 <strong>Bill ID:</strong> {billId}
-        </p>
-        <p>
-          📦 <strong>Order ID:</strong> {orderId}
-        </p>
-        <p>
-          📅 <strong>Date:</strong> {date}
-        </p>
-        <p>
-          ⏰ <strong>Time:</strong> {time}
-        </p>
+
+      <div className="mt-3 text-sm">
+        <p>🧾 Bill ID: {billId}</p>
+        <p>📦 Order ID: {orderId}</p>
+        <p>📅 Date: {date}</p>
+        <p>⏰ Time: {time}</p>
       </div>
+
+      {/* ORDER SUMMARY */}
       <div className="mt-4">
-        <h2 className="text-xl font-semibold border-b pb-2">
-          🛒 Order Summary
-        </h2>
-        {cart.length === 0 ? (
-          <p className="text-gray-500 mt-2">No items in cart.</p>
-        ) : (
-          <ul className="mt-2">
-            {cart.map((item) => (
-              <li
-                key={item.uniqueId}
-                className="flex justify-between text-gray-700 py-2 border-b"
-              >
-                <span>
-                  {item.name} x {item.quantity}
-                </span>
-                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h2 className="font-semibold border-b pb-1">🛒 Order Summary</h2>
+        {displayCart.map((item) => (
+          <div key={item.id} className="flex justify-between text-sm py-1">
+            <span>
+              {item.name} × {item.quantity}
+            </span>
+            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        ))}
       </div>
-      <div className="mt-4 flex justify-between text-xl font-bold border-t pt-2">
-        <span>Total:</span>
-        <span>₹{total.toFixed(2)}</span>
+
+      {/* TOTAL */}
+      <div className="mt-4 flex justify-between font-bold border-t pt-2">
+        <span>Total</span>
+        <span>₹{displayTotal.toFixed(2)}</span>
       </div>
-      <div className="mt-6 text-center">
+
+      {/* PAYMENT BUTTON */}
+      {!orderPlaced && (
         <button
           onClick={handlePayment}
-          className="w-full bg-blue-500 text-white py-2 rounded-lg text-lg font-semibold"
+          className="w-full bg-blue-600 text-white py-2 rounded-lg mt-4"
         >
           💳 Proceed to Payment
         </button>
-      </div>
+      )}
 
+      {/* RESPONSIVE QR */}
       {showQR && (
-        <div className="mt-6 text-center bg-gray-100 p-4 rounded-lg">
-          <h3 className="text-lg font-bold mb-2">Scan QR to Pay</h3>
-          <QRCodeCanvas
-            value={upiUrl}
-            size={200}
-            includeMargin={true}
-            className="mx-auto shadow-lg p-2 bg-white rounded-lg"
-          />
-          <p className="mt-2 text-gray-600">Scan with any UPI app</p>
+        <div className="mt-5 flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+          <h3 className="font-semibold mb-3">Scan QR to Pay</h3>
+          <div className="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center bg-white rounded-lg shadow">
+            <QRCodeCanvas
+              value={upiUrl}
+              size={220}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+          <p className="text-xs text-gray-600 mt-2">Works with all UPI apps</p>
         </div>
       )}
 
-      <div className="mt-6 text-center">
+      {/* MANUAL HOME BUTTON */}
+      {orderPlaced && (
         <button
-          onClick={handleCancel}
-          className="w-full bg-red-500 text-white py-2 rounded-lg text-lg font-semibold"
+          onClick={() => navigate("/")}
+          className="w-full bg-green-600 text-white py-2 rounded-lg mt-5"
         >
-          ❌ Cancel
+          🏠 Go to Home
         </button>
-      </div>
+      )}
     </div>
   );
 };

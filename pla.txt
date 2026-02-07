@@ -1,0 +1,64 @@
+1)App Name  : --- (Through Survey) ✔️
+
+2)Mobile App ---> Students or users 
+	1)Available Item Menu 
+	2)Cart Page 
+		1)Added Item List 
+		2)Degrement
+		3)if Inc (prober Management)
+		4)Cancel and Conform Button 
+		5)Bill Page (Id Generate , Hand Case  ,  Online Payment (Big Process)(Hold) , Status() )
+
+			Example : id : 56789 
+				if Hand Case : status  = "Not Paid"
+				if Online payment   = "pending"
+				if Complete  = "Complete"
+				if take  = "delivered"
+
+
+	
+		
+3)Admin Platform  --> Admin ( desktop Application )
+	1)Login 
+	2)Not register
+	3)Menu Items
+		1)Add Available Items Conform
+		2)able to add the Count too
+		3)Upadte Price or name	
+		4)Add new Item
+		5)remove Item 
+	4)Availble Items
+		1)Available Items
+		2)Upadate count (Manual) 
+		3)remove Availble Items 
+	5)Ordered page:-
+		1)List of orders with respective status :-
+			1)3 Tabs (Not paid  , pending  ,  Complete )
+				1)Not Paid 
+					1)Orders ID 
+					2)each Order ( Paid  , Cancel )
+				2)Pending 
+					1)Order ID 
+					2)Each order (teacher)	
+				3)Complete 
+					1)Order ID
+					2)Total Cost 
+					3)Total Order 
+4)Servent Platform  -- >
+	1) Pending orders
+		1)Order Id 
+		2)Complete details 
+		3)2 Buttons ( food  , Snacks )
+
+5)Big Screen 
+	2 Itms
+	Pending    | ready
+	1)	    | 1)
+	2)
+			
+
+					
+			 
+		
+	
+	
